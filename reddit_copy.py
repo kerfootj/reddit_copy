@@ -55,7 +55,6 @@ else:
 
 # Get account passwords and login 
 pswd1 = getpass.getpass('User 1 Password: ')
-pswd2 = getpass.getpass('User 2 Password: ')
 
 print('logging into account 1')
 reddit_from = praw.Reddit(  client_id = clid1, 
@@ -64,6 +63,7 @@ reddit_from = praw.Reddit(  client_id = clid1,
                             username = user1,
                             password = pswd1)
 
+pswd2 = getpass.getpass('User 2 Password: ')
 print('logging into account 2')
 reddit_to = praw.Reddit(    client_id = clid2, 
                             client_secret = clsc2, 
@@ -71,11 +71,32 @@ reddit_to = praw.Reddit(    client_id = clid2,
                             username = user2,
                             password = pswd2)
 
+# Optional - unsave all posts before copying
+remove = input('Remove all saved posts from user 2 before copying y/n? ')
+if remove.upper() == "Y":
+    try:
+        removed = 0
+        check = 0
+        print('Trying to remove posts...')
+        while True:
+            for post in reddit_to.redditor(user2).saved(limit=100):
+                post.unsave()
+                removed += 1
+            if removed == check:
+                break
+            else:
+                check = removed
+        print('Removed %d saved posts from user 2' % (removed))
+    except:
+        print('Failed to delete all saved posts...\n')
+
+# Copy posts from user 1 to user 2
 total = 0
 copied = 0
 failed = 0
 failed_saves = []
 
+print('Trying to copy posts from user 1 to user 2...')
 for post in reddit_from.redditor(user1).saved(limit=1000):
     copied += 1
     if post.over_18 == True:
