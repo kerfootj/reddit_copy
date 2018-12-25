@@ -90,23 +90,78 @@ if remove.upper() == "Y":
     except:
         print('Failed to delete all saved posts...\n')
 
-# Copy posts from user 1 to user 2
+# Filters
+subs_filter = 0
+nsfw = 0
+sfw = 0
+
+# Only copy from select subreddits
+sub_filter = []
+filter = input('\nCopy specific subreddits?\nProvide a list or a txt file\nBy default all subs are copied\n')
+print('filter: %s' % (filter))
+if filter.upper() != '':
+    subs_filter = 1
+    if '.txt' in filter:
+        try:
+            file = open(sub_filter)
+            for sub in file:
+                sub_filter.append(sub[:-1])
+        except:
+            print('failed to open file')
+    else:
+        subs = filter.split()
+        for sub in subs:
+            sub_filter.append(sub)
+
+# Filter out posts marked NSFW
+nsfw_filter = input('\nCopy posts marked NSFW y/n? ')
+if nsfw_filter.upper() != 'Y':
+    nsfw = 1
+
+# Filter out posts not marked NSFW
+sfw_filter = input('\nCopy posts not marked NSFW y/n? ')
+if sfw_filter.upper() != 'Y':
+    sfw = 1
+
 total = 0
 copied = 0
 failed = 0
-failed_saves = []
 
-print('Trying to copy posts from user 1 to user 2...')
+# Copy posts from user 1 to user 2
+print('\nTrying to copy posts from user 1 to user 2...')
 for post in reddit_from.redditor(user1).saved(limit=1000):
-    copied += 1
-    if post.over_18 == True:
-        total += 1
-    else:
-        try:
-            submission = reddit_to.submission(id=post)
-            submission.save()
-        except:
-            failed += 1
-            failed_saves.append(submission)
+    total += 1
+    if post.over_18 == True and nsfw != 1:
+        if subs_filter == 1:
+            if post.subreddit.display_name in sub_filter:
+                try:
+                    submission = reddit_to.submission(id=post)
+                    submission.save()
+                    copied += 1
+                except:
+                    failed += 1
+        else:
+            try:
+                submission = reddit_to.submission(id=post)
+                submission.save()
+                copied += 1
+            except:
+                failed += 1  
+    elif post.over_18 == False and sfw != 1:
+        if subs_filter == 1:
+            if post.subreddit.display_name in sub_filter:
+                try:
+                    submission = reddit_to.submission(id=post)
+                    submission.save()
+                    copied += 1
+                except:
+                    failed += 1
+        else:
+            try:
+                submission = reddit_to.submission(id=post)
+                submission.save()
+                copied += 1
+            except:
+                failed += 1 
             
-print('%d posts failed to save and %d saved successfully' % (failed, copied))
+print('%d of %d posts copied from u1 to u2' % (copied, total))
